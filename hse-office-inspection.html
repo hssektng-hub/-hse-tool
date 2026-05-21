@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pengecekan HSE — Area Kantor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f5f7;min-height:100vh;padding:24px 16px;color:#1a1a1a}
+  .wrap{max-width:740px;margin:0 auto}
+  .hdr{text-align:center;margin-bottom:18px}
+  .hdr h1{font-size:22px;font-weight:600;color:#111;margin-bottom:4px}
+  .hdr p{font-size:13px;color:#666}
+  .scene{background:#fff;border-radius:14px;border:1px solid #e0e0e0;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.07)}
+  canvas{width:100%;display:block;cursor:default}
+  .legend{display:flex;gap:16px;justify-content:center;margin:10px 0;flex-wrap:wrap}
+  .leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#555}
+  .leg-dot{width:10px;height:10px;border-radius:50%}
+  .panel{margin-top:10px;background:#fff;border-radius:14px;border:1px solid #e0e0e0;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,.05)}
+  .tabs{display:flex;border-bottom:1px solid #eee}
+  .tab-btn{flex:1;padding:11px 8px;font-size:13px;font-weight:500;background:#fff;border:none;border-bottom:2.5px solid transparent;color:#888;cursor:pointer;transition:color .15s,border-color .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+  .tab-btn.active{color:#185FA5;border-bottom-color:#185FA5;background:#fff}
+  .tab-body{padding:16px 20px;min-height:110px}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;margin-bottom:8px;letter-spacing:.02em}
+  .bd-danger{background:#FDECEA;color:#B00020}
+  .bd-warn{background:#FFF3CD;color:#7D4E00}
+  .bd-ok{background:#E6F4EA;color:#1E6830}
+  .bd-info{background:#E3F0FB;color:#0C447C}
+  .zone-title{font-size:15px;font-weight:600;color:#111;margin-bottom:4px}
+  .zone-desc{font-size:13px;color:#555;line-height:1.65;margin-bottom:10px}
+  .action-list{display:flex;flex-direction:column;gap:5px}
+  .action-item{font-size:13px;color:#333;display:flex;align-items:flex-start;gap:8px;line-height:1.55}
+  .chk{color:#1D9E75;font-weight:700;flex-shrink:0;margin-top:1px}
+  .placeholder{font-size:13px;color:#999;padding:8px 0;display:flex;align-items:center;gap:8px}
+  .step-card{margin-bottom:12px}
+  .step-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .step-icon{width:38px;height:38px;border-radius:50%;background:#E3F0FB;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-meta{font-size:11px;color:#888;margin-bottom:2px}
+  .step-title{font-size:15px;font-weight:600;color:#111}
+  .step-desc{font-size:13px;color:#555;line-height:1.7;padding:12px 14px;background:#f8f9fa;border-radius:8px}
+  .step-nav{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .nav-btn{padding:6px 14px;font-size:13px;background:#fff;border:1px solid #d0d0d0;border-radius:8px;color:#333;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s}
+  .nav-btn:hover{background:#f4f5f7}
+  .nav-btn:disabled{opacity:.4;pointer-events:none}
+  .prog-wrap{flex:1;background:#eee;border-radius:999px;height:4px;overflow:hidden}
+  .prog-bar{height:4px;background:#185FA5;border-radius:999px;transition:width .3s}
+  .footer{text-align:center;margin-top:20px;font-size:11px;color:#bbb}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <h1>🦺 Pengecekan HSE — Area Kantor</h1>
+    <p>Klik zona di denah untuk melihat potensi bahaya &amp; checklist inspeksi</p>
+  </div>
+
+  <div class="scene">
+    <canvas id="hseCanvas" width="680" height="430"></canvas>
+  </div>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#EF9F27"></div>Perlu perhatian</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#E24B4A"></div>Bahaya tinggi</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#3B8C3B"></div>Umumnya aman</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Area keamanan</div>
+  </div>
+
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab-btn active" id="btnChecklist" onclick="switchTab('checklist')">
+        <i class="ti ti-checklist" style="font-size:15px"></i> Checklist Inspeksi
+      </button>
+      <button class="tab-btn" id="btnVideo" onclick="switchTab('video')">
+        <i class="ti ti-player-play" style="font-size:15px"></i> Cara Penggunaan
+      </button>
+    </div>
+    <div class="tab-body" id="bodyChecklist">
+      <div class="placeholder">
+        <i class="ti ti-hand-click" style="font-size:18px;color:#185FA5"></i>
+        Klik salah satu zona di denah untuk melihat checklist inspeksi dan detail bahaya.
+      </div>
+    </div>
+    <div class="tab-body" id="bodyVideo" style="display:none">
+      <div id="videoContent"></div>
+    </div>
+  </div>
+
+  <div class="footer">HSE Office Inspection Tool — untuk penggunaan internal perusahaan</div>
+</div>
+
+<script>
+const C = document.getElementById('hseCanvas');
+const ctx = C.getContext('2d');
+const W = 680, H = 430;
+
+const zones = [
+  { id:'electrical', label:'Panel Listrik', x:20, y:20, w:130, h:95,
+    color:'#E24B4A', tc:'#fff', badge:'Bahaya tinggi', bc:'bd-danger',
+    emoji:'⚡',
+    title:'Panel & instalasi listrik',
+    desc:'Area panel listrik adalah zona kritis. Overloading, kabel terbuka, dan panel tanpa penutup bisa menyebabkan kebakaran atau sengatan listrik.',
+    actions:['Pastikan panel listrik tertutup rapat dan berlabel','Cek tidak ada kabel telanjang / terkelupas','Tidak ada beban ganda di stop kontak (tumpuk colokan)','Periksa kondisi MCB/fuse — tidak ada yang trip permanen','Area sekitar panel bebas dari tumpukan barang (min. 1 meter)']
+  },
+  { id:'corridor', label:'Koridor', x:170, y:20, w:180, h:95,
+    color:'#EF9F27', tc:'#3a2000', badge:'Perlu perhatian', bc:'bd-warn',
+    emoji:'🚶',
+    title:'Slip, trip & fall — koridor',
+    desc:'Koridor yang berantakan, basah, atau kurang pencahayaan adalah penyebab utama kecelakaan slip-trip-fall di kantor.',
+    actions:['Lantai tidak licin / basah — pasang tanda jika ada tumpahan','Tidak ada kabel melintang di jalur pejalan kaki','Karpet tidak menggulung / terangkat di pinggirannya','Pencahayaan cukup di seluruh koridor (min. 200 lux)','Jalur evakuasi tidak terhalang dan rambu jelas terlihat','Lebar lorong cukup untuk 2 orang berpapasan (min. 90cm)']
+  },
+  { id:'workstation', label:'Area Kerja', x:370, y:20, w:160, h:95,
+    color:'#3B8C3B', tc:'#fff', badge:'Umumnya aman', bc:'bd-ok',
+    emoji:'💻',
+    title:'Ergonomi & workstation',
+    desc:'Area kerja yang tidak ergonomis bisa menyebabkan musculoskeletal disorder (MSD). Penataan kabel yang buruk juga berisiko trip dan bahaya listrik.',
+    actions:['Kabel komputer/charger rapi, tidak berseliweran di lantai','Kursi dapat diatur ketinggiannya — posisi duduk 90°','Monitor sejajar mata, jarak 50–70cm dari wajah','Tidak ada barang berat di rak atas yang berpotensi jatuh','Stop kontak tidak kelebihan beban (max 1 adaptor/kontak)','Area di bawah meja bebas dari tumpukan kardus/barang']
+  },
+  { id:'staircase', label:'Tangga', x:550, y:20, w:120, h:95,
+    color:'#E24B4A', tc:'#fff', badge:'Bahaya tinggi', bc:'bd-danger',
+    emoji:'🪜',
+    title:'Tangga — risiko jatuh',
+    desc:'Tangga adalah titik kecelakaan tertinggi di gedung kantor. Kondisi buruk, pencahayaan minim, atau handrail rusak sangat berbahaya.',
+    actions:['Handrail kokoh di kedua sisi, tidak goyang','Setiap anak tangga dilengkapi anti-slip strip','Tidak ada barang ditaruh di anak tangga','Pencahayaan tangga memadai, lampu tidak mati','Tanda "hati-hati lantai licin" tersedia saat basah','Lantai atas dan bawah tangga bebas dari tumpukan barang']
+  },
+  { id:'pantry', label:'Pantry', x:20, y:135, w:155, h:105,
+    color:'#EF9F27', tc:'#3a2000', badge:'Perlu perhatian', bc:'bd-warn',
+    emoji:'☕',
+    title:'Pantry — tumpahan & kebakaran',
+    desc:'Area pantry rentan tumpahan air (slip), kebakaran dari microwave/pemanas, serta bahaya listrik dari peralatan memasak.',
+    actions:['Lantai pantry memiliki matras anti-slip','Microwave/kettle tidak dioperasikan tanpa pengawasan','Tidak ada kain/kertas di dekat kompor atau pemanas','APAR tersedia dan tidak kadaluarsa di sekitar area','Bahan kimia pembersih disimpan terpisah dari makanan, berlabel']
+  },
+  { id:'toilet', label:'Toilet', x:195, y:135, w:125, h:105,
+    color:'#EF9F27', tc:'#3a2000', badge:'Perlu perhatian', bc:'bd-warn',
+    emoji:'🚿',
+    title:'Toilet — slip & kebersihan',
+    desc:'Lantai toilet yang selalu basah adalah sumber slip terbesar. Peralatan listrik juga harus diperiksa secara berkala.',
+    actions:['Matras anti-slip di depan pintu dan area wastafel','Tidak ada genangan air — lapor jika ada kebocoran','Hand dryer/outlet listrik jauh dari sumber air','Tanda "lantai basah" selalu tersedia saat diperlukan','Pintu toilet membuka ke luar (sesuai standar evakuasi)','Pencahayaan memadai — lampu tidak kedip atau padam']
+  },
+  { id:'storage', label:'Gudang', x:340, y:135, w:160, h:105,
+    color:'#E24B4A', tc:'#fff', badge:'Bahaya tinggi', bc:'bd-danger',
+    emoji:'📦',
+    title:'Gudang — tumpukan & kebakaran',
+    desc:'Gudang sering diabaikan dalam inspeksi. Tumpukan barang tinggi, kabel tersembunyi, dan kurangnya ventilasi menjadi risiko serius.',
+    actions:['Rak penyimpanan stabil, tidak miring, terpasang ke dinding','Barang berat di rak bawah, ringan di atas','Tidak ada material mudah terbakar dekat panel listrik','Jalur akses dalam gudang tidak terhalang (min. 60cm)','APAR tersedia dan tidak tertutup tumpukan barang','Ada ventilasi — gudang tidak kedap udara']
+  },
+  { id:'emergency', label:'Jalur Darurat', x:520, y:135, w:150, h:105,
+    color:'#3B8C3B', tc:'#fff', badge:'Wajib dicek rutin', bc:'bd-ok',
+    emoji:'🚪',
+    title:'Jalur darurat & titik kumpul',
+    desc:'Jalur evakuasi yang terhambat atau tidak bertanda jelas bisa berakibat fatal saat keadaan darurat. Wajib dicek setiap bulan.',
+    actions:['Pintu darurat tidak dikunci/diblokir dari dalam','Rambu EXIT menyala (lampu tidak mati)','Peta evakuasi terpasang di setiap lantai, terlihat jelas','Titik kumpul ditandai dan seluruh karyawan tahu lokasinya']
+  },
+  { id:'meeting', label:'Ruang Rapat', x:20, y:260, w:295, h:100,
+    color:'#3B8C3B', tc:'#fff', badge:'Umumnya aman', bc:'bd-ok',
+    emoji:'📋',
+    title:'Ruang rapat — ergonomi & listrik',
+    desc:'Ruang rapat seringkali penuh kabel proyektor/laptop yang tidak terkelola dan ventilasi yang kurang saat ruangan penuh.',
+    actions:['Kabel proyektor/HDMI tidak melintang di lantai saat rapat','Tidak ada extension cord yang terlipat atau tertindih','Ventilasi/AC berfungsi — tidak pengap saat ruangan penuh','Kapasitas ruangan tidak dilampaui (bahaya saat evakuasi)','Pintu ruang rapat tidak terhalang dari dalam maupun luar','Layar proyektor terpasang kuat, tidak berpotensi jatuh']
+  },
+  { id:'security', label:'Pos Security', x:335, y:260, w:335, h:100,
+    color:'#185FA5', tc:'#fff', badge:'Area keamanan', bc:'bd-info',
+    emoji:'🛡️',
+    title:'Pos security — perlengkapan & pengawasan',
+    desc:'Pos security harus memiliki perlengkapan yang lengkap dan sistem CCTV yang memadai untuk menjamin keamanan seluruh area kantor.',
+    actions:['Perlengkapan pengaman lengkap tersedia: borgol, tonfa, rompi','Radio/HT komunikasi berfungsi dan terisi daya','CCTV aktif dan mencakup seluruh area — tidak ada blind spot','Monitor CCTV terpantau 24 jam di pos security','Logbook kunjungan tamu diisi dengan lengkap dan tertib','Akses masuk/keluar gedung terkontrol dan tercatat']
+  }
+];
+
+const pa = {};
+zones.forEach(z => pa[z.id] = Math.random() * Math.PI * 2);
+let hov = null;
+
+function drr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f0f2f5'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.08)';
+  ctx.fillRect(0,130,W,3); ctx.fillRect(0,255,W,3);
+
+  zones.forEach(z=>{
+    const isH = hov===z.id;
+    pa[z.id] = (pa[z.id]+0.035)%(Math.PI*2);
+    const pulse = Math.sin(pa[z.id])*0.08+0.92;
+    ctx.save();
+    if(isH){ctx.shadowColor=z.color;ctx.shadowBlur=16;}
+    ctx.globalAlpha = isH ? 1 : (0.78+0.1*pulse);
+    ctx.fillStyle = z.color;
+    drr(z.x+4,z.y+4,z.w-8,z.h-8,10); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle = isH ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = isH ? 2.5 : 0.8;
+    drr(z.x+4,z.y+4,z.w-8,z.h-8,10); ctx.stroke();
+    ctx.restore();
+
+    const cx = z.x+z.w/2, cy = z.y+z.h/2;
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(z.emoji, cx, cy-14);
+
+    ctx.font = '600 11.5px -apple-system,sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = z.tc; ctx.globalAlpha = 0.93;
+    ctx.fillText(z.label, cx, cy+13);
+    ctx.globalAlpha = 1;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+function getZone(mx,my){
+  const r=C.getBoundingClientRect();
+  const sx=W/r.width, sy=H/r.height;
+  const cx=(mx-r.left)*sx, cy=(my-r.top)*sy;
+  return zones.find(z=>cx>=z.x+4&&cx<=z.x+z.w-4&&cy>=z.y+4&&cy<=z.y+z.h-4)||null;
+}
+C.addEventListener('mousemove',e=>{
+  const z=getZone(e.clientX,e.clientY);
+  hov=z?z.id:null; C.style.cursor=z?'pointer':'default';
+});
+C.addEventListener('mouseleave',()=>{hov=null;});
+C.addEventListener('click',e=>{const z=getZone(e.clientX,e.clientY);if(z)showInfo(z);});
+C.addEventListener('touchend',e=>{
+  e.preventDefault();
+  const t=e.changedTouches[0];
+  const z=getZone(t.clientX,t.clientY);
+  if(z)showInfo(z);
+},{passive:false});
+
+function showInfo(z){
+  switchTab('checklist');
+  document.getElementById('bodyChecklist').innerHTML=`
+    <span class="badge ${z.bc}">${z.badge}</span>
+    <div class="zone-title">${z.emoji} ${z.title}</div>
+    <div class="zone-desc">${z.desc}</div>
+    <div class="action-list">
+      ${z.actions.map(a=>`<div class="action-item"><span class="chk">✓</span>${a}</div>`).join('')}
+    </div>`;
+}
+
+let activeTab='checklist', stepIdx=0;
+
+const steps=[
+  {icon:'ti-map-2',title:'Lihat denah kantor',desc:'Di bagian atas terdapat denah kantor yang sudah dibagi menjadi 10 zona. Setiap zona memiliki warna yang menunjukkan tingkat risiko bahaya.'},
+  {icon:'ti-hand-click',title:'Klik zona yang ingin dicek',desc:'Klik atau tap salah satu kotak zona (misalnya "Panel Listrik" atau "Koridor"). Panel informasi di bawah akan langsung menampilkan detail bahaya dan checklist.'},
+  {icon:'ti-checklist',title:'Baca & catat checklist',desc:'Tab "Checklist Inspeksi" menampilkan daftar poin inspeksi untuk zona tersebut. Gunakan sebagai panduan saat melakukan walkthrough HSE di lapangan.'},
+  {icon:'ti-alert-triangle',title:'Perhatikan level risiko',desc:'Badge merah = bahaya tinggi (prioritas utama), kuning = perlu perhatian, hijau = umumnya aman, biru = area keamanan. Mulai inspeksi dari zona merah terlebih dahulu.'},
+  {icon:'ti-clipboard-list',title:'Dokumentasikan temuan',desc:'Setelah selesai inspeksi, catat setiap ketidaksesuaian yang ditemukan ke dalam form HSE. Laporkan ke PIC HSE atau supervisor langsung.'},
+  {icon:'ti-refresh',title:'Lakukan secara berkala',desc:'Inspeksi rutin disarankan minimal 1 bulan sekali. Area seperti tangga, panel listrik, pos security, dan jalur darurat perlu dicek lebih sering.'}
+];
+
+function switchTab(t){
+  activeTab=t;
+  const bc=document.getElementById('bodyChecklist');
+  const bv=document.getElementById('bodyVideo');
+  const btnC=document.getElementById('btnChecklist');
+  const btnV=document.getElementById('btnVideo');
+  if(t==='checklist'){
+    bc.style.display='block'; bv.style.display='none';
+    btnC.classList.add('active'); btnV.classList.remove('active');
+  } else {
+    bc.style.display='none'; bv.style.display='block';
+    btnV.classList.add('active'); btnC.classList.remove('active');
+    renderStep();
+  }
+}
+
+function renderStep(){
+  const s=steps[stepIdx];
+  const pct=Math.round(((stepIdx+1)/steps.length)*100);
+  document.getElementById('videoContent').innerHTML=`
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-icon"><i class="ti ${s.icon}" style="font-size:18px;color:#185FA5"></i></div>
+        <div>
+          <div class="step-meta">Langkah ${stepIdx+1} dari ${steps.length}</div>
+          <div class="step-title">${s.title}</div>
+        </div>
+      </div>
+      <div class="step-desc">${s.desc}</div>
+    </div>
+    <div class="step-nav">
+      <button class="nav-btn" onclick="goStep(-1)" ${stepIdx===0?'disabled':''}>
+        <i class="ti ti-arrow-left" style="font-size:14px"></i> Sebelumnya
+      </button>
+      <div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div>
+      <button class="nav-btn" onclick="goStep(1)" ${stepIdx===steps.length-1?'disabled':''}>
+        Berikutnya <i class="ti ti-arrow-right" style="font-size:14px"></i>
+      </button>
+    </div>`;
+}
+
+function goStep(d){
+  stepIdx=Math.max(0,Math.min(steps.length-1,stepIdx+d));
+  renderStep();
+}
+</script>
+</body>
+</html>
